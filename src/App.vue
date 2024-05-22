@@ -3,16 +3,16 @@
     <h1>Bienvenido a la App de gastos</h1>
     <form @submit.prevent="addExpense">
       <div>
-        <label for ="date">Fecha: </label>
-        <input type="date" v-model="newExpense.date" required />
+        <label for="fecha">Fecha: </label>
+        <input type="date" v-model="newExpense.fecha" required />
       </div>
       <div>
-        <label for ="description">Descripcion: </label>
-        <input type="text" v-model="newExpense.description" placeholder="Descripción" required />
+        <label for="descripcion">Descripcion: </label>
+        <input type="text" v-model="newExpense.descripcion" placeholder="Descripción" required />
       </div>
       <div>
-        <label for ="amount">Cantidad: </label>
-        <input type="number" step="any" v-model="newExpense.amount" placeholder="Cantidad" required />
+        <label for="cantidad">Cantidad: </label>
+        <input type="number" step="any" v-model="newExpense.cantidad" placeholder="Cantidad" required />
       </div>
       <button type="submit">Añadir Gasto</button>
     </form>
@@ -23,44 +23,63 @@
         <th>Cantidad</th>
       </tr>
       <tr v-for="expense in expenses" :key="expense.id">
-        <td>{{ expense.date }}</td>
-        <td>{{ expense.description }}</td>
-        <td>{{ formatCurrency(expense.amount) }}</td>
+        <td>{{ formatDate(expense.fecha) }}</td>
+        <td>{{ expense.descripcion }}</td>
+        <td>{{ formatCurrency(expense.cantidad) }}</td>
       </tr>
     </table>
-    <!-- <ul>
-      <li v-for="expense in expenses" :key="expense.id">
-        {{ expense.date }} - {{ expense.description }}: {{ formatCurrency(expense.amount) }}
-      </li>
-    </ul> -->
   </div>
 </template>
 
 <script>
+import axios from 'axios'
+import { format } from 'date-fns'
+
 export default {
   name: 'App',
   data() {
     return {
       newExpense: {
-        date: '',
-        description: '',
-        amount: ''
+        fecha: '',
+        descripcion: '',
+        cantidad: ''
       },
       expenses: []
     };
   },
+  mounted() {
+    axios.get('http://localhost:8080/api/gastos')
+    .then(response => {
+      this.expenses = response.data;
+    })
+    .catch(error => {
+      console.error('Error al obtener los gastos: ', error);
+    })
+  },
   methods: {
     addExpense() {
-      if (this.newExpense.date && this.newExpense.description && this.newExpense.amount) {
-        const id = Date.now()
-        this.expenses.push({ ...this.newExpense, id});
-        this.newExpense.date = '';
-        this.newExpense.description = '';
-        this.newExpense.amount = '';
+      if (this.newExpense.fecha && this.newExpense.descripcion && this.newExpense.cantidad) {
+        axios.post('http://localhost:8080/api/gastos', this.newExpense)
+          .then(response => {
+            console.log('Gasto añadido:', response.data);
+            this.expenses.push(response.data);
+            this.newExpense = {
+              fecha: '',
+              descripcion: '',
+              cantidad: '',
+            }
+          })
+          .catch(error => {
+            console.error('Error al añadir el gasto:', error);
+          })
       }
     },
     formatCurrency(value) {
       return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(value);
+    },
+    formatDate(dateString) {
+      const date = new Date(dateString);
+      return format(date, 'dd/MM/yyyy');
     }
   }
 };
